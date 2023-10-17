@@ -1,0 +1,33 @@
+phase4_start_service_processes() called -- currently a NOP
+phase5_start_service_processes() called -- currently a NOP
+start3(): started
+start3(): calling Spawn for Child1a
+Child1a(): starting
+Child1a(): current time of day = 103   Should be close, but does not have to be an exact match
+Child1a(): current CPU time =  81     Should be close, but does not have to be an exact match
+Child1a(): current time of day = 114   Should be close, but does not have to be an exact match
+Child1a(): current CPU time =  92     Should be close, but does not have to be an exact match
+Child1a(): current time of day = 127   Should be close, but does not have to be an exact match
+Child1a(): current CPU time = 105     Should be close, but does not have to be an exact match
+Child1a(): done
+start3(): calling Spawn for Child1b
+Child1b(): starting
+Child1b(): current time of day = 211   Should be close, but does not have to be an exact match
+Child1b(): current CPU time = 191     Should be close, but does not have to be an exact match
+Child1b(): current time of day = 225   Should be close, but does not have to be an exact match
+Child1b(): current CPU time = 206     Should be close, but does not have to be an exact match
+Child1b(): current time of day = 242   Should be close, but does not have to be an exact match
+Child1b(): current CPU time = 222     Should be close, but does not have to be an exact match
+Child1b(): done
+start3(): calling Spawn for Child1c
+Child1c(): starting
+Child1c(): current time of day = 332   Should be close, but does not have to be an exact match
+Child1c(): current CPU time = 310     Should be close, but does not have to be an exact match
+Child1c(): current time of day = 346   Should be close, but does not have to be an exact match
+Child1c(): current CPU time = 320     Should be close, but does not have to be an exact match
+Child1c(): current time of day = 359   Should be close, but does not have to be an exact match
+Child1c(): current CPU time = 334     Should be close, but does not have to be an exact match
+Child1c(): done
+start3(): calling Wait for all 3 children
+start3(): Parent done. Calling Terminate.
+finish(): The simulation is now terminating.
