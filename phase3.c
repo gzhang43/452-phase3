@@ -58,7 +58,7 @@ void kernSpawn(USLOSS_Sysargs *arg) {
 }
 
 void kernWait(USLOSS_Sysargs *arg) {
-    int status = 7; //this initial value does not matter, since it is overwritten by join
+    int status;
     int ret = join(&status);
     
     if (ret == -2) {
