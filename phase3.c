@@ -19,11 +19,17 @@ typedef struct PCB {
 void kernSpawn(USLOSS_Sysargs *arg);
 void kernWait(USLOSS_Sysargs *arg);
 void kernTerminate(USLOSS_Sysargs *arg);
+void kernGetTimeOfDay(USLOSS_Sysargs* arg);
+void kernCPUTime(USLOSS_Sysargs* arg);
+void kernGetPID(USLOSS_Sysargs* arg);
 
 void phase3_init(void) {
     systemCallVec[3] = kernSpawn;
     systemCallVec[4] = kernWait;
     systemCallVec[5] = kernTerminate;
+    systemCallVec[20] = kernGetTimeOfDay;
+    systemCallVec[21] = kernCPUTime;
+    systemCallVec[22] = kernGetPID;
 }
 
 void phase3_start_service_processes(void) {
@@ -72,4 +78,16 @@ void kernTerminate(USLOSS_Sysargs *arg) {
         ret = join(status);
     }
     quit(0);
+}
+
+void kernGetTimeOfDay(USLOSS_Sysargs* arg) {
+    arg->arg1 = (void*)(long)currentTime();
+}
+
+void kernCPUTime(USLOSS_Sysargs* arg) {
+    arg->arg1 = (void*)(long)readtime();
+}
+
+void kernGetPID(USLOSS_Sysargs* arg) {
+    arg->arg1 = (void*)(long)getpid();
 }
