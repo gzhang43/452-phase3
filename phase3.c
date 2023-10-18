@@ -54,11 +54,12 @@ void kernSpawn(USLOSS_Sysargs *arg) {
     int ret = fork1(arg->arg5, trampolineFunc, arg->arg2, stackSize, priority);
 
     arg->arg1 = (void*)(long)ret;
+    arg->arg4 = (void*)(long)0;
 }
 
 void kernWait(USLOSS_Sysargs *arg) {
-    //int *status = (int*)(long)arg->arg2;
-    int ret = join((int*)(long)arg->arg2);
+    int status = 7; //this initial value does not matter, since it is overwritten by join
+    int ret = join(&status);
     
     if (ret == -2) {
         arg->arg4 = (void*)(long)-2;
@@ -66,16 +67,17 @@ void kernWait(USLOSS_Sysargs *arg) {
     else {
         arg->arg4 = (void*)(long)0;
         arg->arg1 = (void*)(long)ret;
-        //arg->arg2 = (void*)(long)status;
+        arg->arg2 = (void*)(long)status;
     }
 }
 
 void kernTerminate(USLOSS_Sysargs *arg) {
-    int *status = (int*)(long)arg->arg1;
-    
-    int ret = join(status);
+    int status = (int)(long)arg->arg1;
+
+    //USLOSS_Console("stat: %d\n", status);
+    int ret = join(&status);
     while (ret != -2) {
-        ret = join(status);
+        ret = join(&status);
     }
     quit(0);
 }
