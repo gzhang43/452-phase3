@@ -74,7 +74,7 @@ void kernWait(USLOSS_Sysargs *arg) {
 void kernTerminate(USLOSS_Sysargs *arg) {
     int status = (int)(long)arg->arg1;
 
-    USLOSS_Console("stat: %d\n", status);
+    //USLOSS_Console("stat: %d\n", status);
     int ret = join(&status);
     while (ret != -2) {
         ret = join(&status);
