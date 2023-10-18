@@ -19,17 +19,24 @@ typedef struct PCB {
 void kernSpawn(USLOSS_Sysargs *arg);
 void kernWait(USLOSS_Sysargs *arg);
 void kernTerminate(USLOSS_Sysargs *arg);
+void kernSemCreate(USLOSS_Sysargs* arg);
 void kernGetTimeOfDay(USLOSS_Sysargs* arg);
 void kernCPUTime(USLOSS_Sysargs* arg);
 void kernGetPID(USLOSS_Sysargs* arg);
+
+int semaphores[MAXSEMS];
+int numberOfSems;
 
 void phase3_init(void) {
     systemCallVec[3] = kernSpawn;
     systemCallVec[4] = kernWait;
     systemCallVec[5] = kernTerminate;
+    systemCallVec[16] = kernSemCreate;
     systemCallVec[20] = kernGetTimeOfDay;
     systemCallVec[21] = kernCPUTime;
     systemCallVec[22] = kernGetPID;
+
+    numberOfSems = 0;
 }
 
 void phase3_start_service_processes(void) {
@@ -80,6 +87,19 @@ void kernTerminate(USLOSS_Sysargs *arg) {
         ret = join(&status);
     }
     quit(0);
+}
+
+void kernSemCreate(USLOSS_Sysargs* arg) {
+    if (numberOfSems >= MAXSEMS) {
+        arg->arg4 = (void*)(long)-1;
+    }
+    else {
+        int initialValue = (int)(long)arg->arg1;
+        semaphores[numberOfSems] = initialValue;
+        arg->arg1 = (void*)(long)numberOfSems;
+        arg->arg4 = (void*)(long)0;
+        numberOfSems++;
+    }
 }
 
 void kernGetTimeOfDay(USLOSS_Sysargs* arg) {
