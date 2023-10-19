@@ -5,8 +5,6 @@
 #include "phase3.h"
 #include "phase3_usermode.h"
 
-int(*func)(char*);
-
 typedef struct PCB {
     char* name;
     int (*startFunc)(char*);
@@ -31,6 +29,7 @@ void kernSemV(USLOSS_Sysargs* arg);
 struct PCB processTable3[MAXPROC+1];
 int semaphoresList[MAXSEMS];
 int numberOfSems;
+int mboxIdInts; // id of mailbox for enabling/disabling interrupts
 
 void phase3_init(void) {
     systemCallVec[3] = kernSpawn;
@@ -44,7 +43,8 @@ void phase3_init(void) {
     systemCallVec[22] = kernGetPID;
 
     numberOfSems = 0;
-
+    mboxIdInts = MboxCreate(1, 0);
+ 
     for (int i = 0; i < MAXPROC; i++) {
         processTable3[i].filled = 0;
     }
@@ -70,12 +70,12 @@ int trampolineFunc(char *arg) {
         USLOSS_Console("Error: invalid PSR value for set.\n");
         USLOSS_Halt(1);
     }
-    int status = func(arg);
+    int status = processTable3[pid % MAXPROC].startFunc(arg);
     Terminate(status);
 }
 
 void kernSpawn(USLOSS_Sysargs *arg) {
-    func = (int(*)(char*))arg->arg1;
+    int (*func)(char*) = (int(*)(char*))arg->arg1;
     int stackSize = (int)(long)arg->arg3;
     int priority = (int)(long)arg->arg4;
 
