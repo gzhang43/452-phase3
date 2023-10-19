@@ -23,8 +23,10 @@ void kernSemCreate(USLOSS_Sysargs* arg);
 void kernGetTimeOfDay(USLOSS_Sysargs* arg);
 void kernCPUTime(USLOSS_Sysargs* arg);
 void kernGetPID(USLOSS_Sysargs* arg);
+void kernSemP(USLOSS_Sysargs* arg);
+void kernSemV(USLOSS_Sysargs* arg);
 
-int semaphores[MAXSEMS];
+int semaphoresList[MAXSEMS];
 int numberOfSems;
 
 void phase3_init(void) {
@@ -32,6 +34,8 @@ void phase3_init(void) {
     systemCallVec[4] = kernWait;
     systemCallVec[5] = kernTerminate;
     systemCallVec[16] = kernSemCreate;
+    systemCallVec[17] = kernSemP;
+    systemCallVec[18] = kernSemV;
     systemCallVec[20] = kernGetTimeOfDay;
     systemCallVec[21] = kernCPUTime;
     systemCallVec[22] = kernGetPID;
@@ -80,13 +84,13 @@ void kernWait(USLOSS_Sysargs *arg) {
 
 void kernTerminate(USLOSS_Sysargs *arg) {
     int status = (int)(long)arg->arg1;
-
-    //USLOSS_Console("stat: %d\n", status);
-    int ret = join(&status);
+    int joinStatus;
+    
+    int ret = join(&joinStatus);
     while (ret != -2) {
-        ret = join(&status);
+        ret = join(&joinStatus);
     }
-    quit(0);
+    quit(status);
 }
 
 void kernSemCreate(USLOSS_Sysargs* arg) {
@@ -95,11 +99,32 @@ void kernSemCreate(USLOSS_Sysargs* arg) {
     }
     else {
         int initialValue = (int)(long)arg->arg1;
-        semaphores[numberOfSems] = initialValue;
+        semaphoresList[numberOfSems] = initialValue;
         arg->arg1 = (void*)(long)numberOfSems;
         arg->arg4 = (void*)(long)0;
         numberOfSems++;
     }
+}
+
+void kernSemP(USLOSS_Sysargs* arg) {
+    int id = (int)(long)arg->arg1;
+    if (id < 0 || id >= MAXSEMS) {
+        arg->arg4 = (void*)(long)-1;
+        return;
+    }
+    arg->arg4 = (void*)(long)0;
+    // TODO: block if decreases below 0
+}
+
+void kernSemV(USLOSS_Sysargs* arg) {
+    int id = (int)(long)arg->arg1;
+    if (id < 0 || id >= MAXSEMS) {
+        arg->arg4 = (void*)(long)-1;
+        return;
+    }
+    arg->arg4 = (void*)(long)0;
+    semaphoresList[id]++;
+    // TODO: unblock processes blocked on this semaphore
 }
 
 void kernGetTimeOfDay(USLOSS_Sysargs* arg) {
