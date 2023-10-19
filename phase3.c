@@ -14,6 +14,8 @@ typedef struct PCB {
     int pid;
     int priority;
     int status;
+    int mboxNum;
+    int filled;
 } PCB;
 
 void kernSpawn(USLOSS_Sysargs *arg);
@@ -26,6 +28,7 @@ void kernGetPID(USLOSS_Sysargs* arg);
 void kernSemP(USLOSS_Sysargs* arg);
 void kernSemV(USLOSS_Sysargs* arg);
 
+struct PCB processTable3[MAXPROC+1];
 int semaphoresList[MAXSEMS];
 int numberOfSems;
 
@@ -41,6 +44,10 @@ void phase3_init(void) {
     systemCallVec[22] = kernGetPID;
 
     numberOfSems = 0;
+
+    for (int i = 0; i < MAXPROC; i++) {
+        processTable3[i].filled = 0;
+    }
 }
 
 void phase3_start_service_processes(void) {
@@ -48,6 +55,16 @@ void phase3_start_service_processes(void) {
 }
 
 int trampolineFunc(char *arg) {
+    int pid = getpid();
+    struct PCB* child = &processTable3[pid % MAXPROC];
+    if (child->filled == 0) {
+        child->pid = pid;
+        child->filled = 1;
+        child->mboxNum = MboxCreate(1, 0); // create one-slot mailbox for blocking
+
+        MboxRecv(child->mboxNum, NULL, 0); // block this process
+    }
+
     int result = USLOSS_PsrSet(USLOSS_PsrGet() & ~1); // enable user mode
     if (result == 1) {
         USLOSS_Console("Error: invalid PSR value for set.\n");
@@ -63,6 +80,18 @@ void kernSpawn(USLOSS_Sysargs *arg) {
     int priority = (int)(long)arg->arg4;
 
     int ret = fork1(arg->arg5, trampolineFunc, arg->arg2, stackSize, priority);
+    
+    struct PCB* child = &processTable3[ret % MAXPROC];
+    if (child->filled == 0) {
+        child->pid = ret;
+        child->startFunc = func;
+        child->filled = 1;
+        child->mboxNum = MboxCreate(1, 0); // create 0-slot mailbox for blocking
+    }
+    else {
+        child->startFunc = func;
+        MboxSend(child->mboxNum, NULL, 0);
+    }
 
     arg->arg1 = (void*)(long)ret;
     arg->arg4 = (void*)(long)0;
