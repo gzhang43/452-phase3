@@ -14,22 +14,40 @@ typedef struct PCB {
     int pid;
     int priority;
     int status;
+    int mboxNum;
+    int filled;
 } PCB;
 
 void kernSpawn(USLOSS_Sysargs *arg);
 void kernWait(USLOSS_Sysargs *arg);
 void kernTerminate(USLOSS_Sysargs *arg);
+void kernSemCreate(USLOSS_Sysargs* arg);
 void kernGetTimeOfDay(USLOSS_Sysargs* arg);
 void kernCPUTime(USLOSS_Sysargs* arg);
 void kernGetPID(USLOSS_Sysargs* arg);
+void kernSemP(USLOSS_Sysargs* arg);
+void kernSemV(USLOSS_Sysargs* arg);
+
+struct PCB processTable3[MAXPROC+1];
+int semaphoresList[MAXSEMS];
+int numberOfSems;
 
 void phase3_init(void) {
     systemCallVec[3] = kernSpawn;
     systemCallVec[4] = kernWait;
     systemCallVec[5] = kernTerminate;
+    systemCallVec[16] = kernSemCreate;
+    systemCallVec[17] = kernSemP;
+    systemCallVec[18] = kernSemV;
     systemCallVec[20] = kernGetTimeOfDay;
     systemCallVec[21] = kernCPUTime;
     systemCallVec[22] = kernGetPID;
+
+    numberOfSems = 0;
+
+    for (int i = 0; i < MAXPROC; i++) {
+        processTable3[i].filled = 0;
+    }
 }
 
 void phase3_start_service_processes(void) {
@@ -37,6 +55,16 @@ void phase3_start_service_processes(void) {
 }
 
 int trampolineFunc(char *arg) {
+    int pid = getpid();
+    struct PCB* child = &processTable3[pid % MAXPROC];
+    if (child->filled == 0) {
+        child->pid = pid;
+        child->filled = 1;
+        child->mboxNum = MboxCreate(1, 0); // create one-slot mailbox for blocking
+
+        MboxRecv(child->mboxNum, NULL, 0); // block this process
+    }
+
     int result = USLOSS_PsrSet(USLOSS_PsrGet() & ~1); // enable user mode
     if (result == 1) {
         USLOSS_Console("Error: invalid PSR value for set.\n");
@@ -52,6 +80,18 @@ void kernSpawn(USLOSS_Sysargs *arg) {
     int priority = (int)(long)arg->arg4;
 
     int ret = fork1(arg->arg5, trampolineFunc, arg->arg2, stackSize, priority);
+    
+    struct PCB* child = &processTable3[ret % MAXPROC];
+    if (child->filled == 0) {
+        child->pid = ret;
+        child->startFunc = func;
+        child->filled = 1;
+        child->mboxNum = MboxCreate(1, 0); // create 0-slot mailbox for blocking
+    }
+    else {
+        child->startFunc = func;
+        MboxSend(child->mboxNum, NULL, 0);
+    }
 
     arg->arg1 = (void*)(long)ret;
     arg->arg4 = (void*)(long)0;
@@ -80,6 +120,40 @@ void kernTerminate(USLOSS_Sysargs *arg) {
         ret = join(&joinStatus);
     }
     quit(status);
+}
+
+void kernSemCreate(USLOSS_Sysargs* arg) {
+    if (numberOfSems >= MAXSEMS) {
+        arg->arg4 = (void*)(long)-1;
+    }
+    else {
+        int initialValue = (int)(long)arg->arg1;
+        semaphoresList[numberOfSems] = initialValue;
+        arg->arg1 = (void*)(long)numberOfSems;
+        arg->arg4 = (void*)(long)0;
+        numberOfSems++;
+    }
+}
+
+void kernSemP(USLOSS_Sysargs* arg) {
+    int id = (int)(long)arg->arg1;
+    if (id < 0 || id >= MAXSEMS) {
+        arg->arg4 = (void*)(long)-1;
+        return;
+    }
+    arg->arg4 = (void*)(long)0;
+    // TODO: block if decreases below 0
+}
+
+void kernSemV(USLOSS_Sysargs* arg) {
+    int id = (int)(long)arg->arg1;
+    if (id < 0 || id >= MAXSEMS) {
+        arg->arg4 = (void*)(long)-1;
+        return;
+    }
+    arg->arg4 = (void*)(long)0;
+    semaphoresList[id]++;
+    // TODO: unblock processes blocked on this semaphore
 }
 
 void kernGetTimeOfDay(USLOSS_Sysargs* arg) {
