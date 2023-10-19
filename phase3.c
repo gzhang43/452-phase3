@@ -73,13 +73,13 @@ void kernWait(USLOSS_Sysargs *arg) {
 
 void kernTerminate(USLOSS_Sysargs *arg) {
     int status = (int)(long)arg->arg1;
-
-    //USLOSS_Console("stat: %d\n", status);
-    int ret = join(&status);
+    int joinStatus;
+    
+    int ret = join(&joinStatus);
     while (ret != -2) {
-        ret = join(&status);
+        ret = join(&joinStatus);
     }
-    quit(0);
+    quit(status);
 }
 
 void kernGetTimeOfDay(USLOSS_Sysargs* arg) {
