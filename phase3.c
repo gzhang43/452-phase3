@@ -14,6 +14,7 @@ typedef struct PCB {
     int status;
     int mboxNum;
     int filled;
+    struct PCB* nextBlockedProc;
 } PCB;
 
 void kernSpawn(USLOSS_Sysargs *arg);
@@ -28,6 +29,7 @@ void kernSemV(USLOSS_Sysargs* arg);
 
 struct PCB processTable3[MAXPROC+1];
 int semaphoresList[MAXSEMS];
+struct PCB* semaphoreBlockedProc[MAXSEMS];
 int numberOfSems;
 int mboxIdInts; // id of mailbox for enabling/disabling interrupts
 
@@ -143,6 +145,23 @@ void kernSemP(USLOSS_Sysargs* arg) {
     }
     arg->arg4 = (void*)(long)0;
     // TODO: block if decreases below 0
+    
+    int pid = getpid();
+    semaphoresList[id]--;
+    if (semaphoresList[id] < 0) {
+        PCB* procList = semaphoreBlockedProc[id];
+        if (procList == NULL) {
+            semaphoreBlockedProc[id] = &processTable3[pid % MAXPROC];
+        }
+        else {
+            while (procList->nextBlockedProc != NULL) { //adds to tail of list
+                procList = procList->nextBlockedProc;
+            }
+            procList->nextBlockedProc = &processTable3[pid % MAXPROC];
+            
+        }
+        MboxRecv(processTable3[pid % MAXPROC].mboxNum, NULL, 0);
+    }
 }
 
 void kernSemV(USLOSS_Sysargs* arg) {
@@ -154,6 +173,12 @@ void kernSemV(USLOSS_Sysargs* arg) {
     arg->arg4 = (void*)(long)0;
     semaphoresList[id]++;
     // TODO: unblock processes blocked on this semaphore
+    if (semaphoreBlockedProc[id] != NULL) {
+        PCB* process = semaphoreBlockedProc[id];
+        semaphoreBlockedProc[id] = semaphoreBlockedProc[id]->nextBlockedProc;
+        process->nextBlockedProc = NULL;
+        MboxSend(process->mboxNum, NULL, 0);
+    }
 }
 
 void kernGetTimeOfDay(USLOSS_Sysargs* arg) {
