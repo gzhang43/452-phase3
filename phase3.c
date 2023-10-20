@@ -148,18 +148,12 @@ void kernSemP(USLOSS_Sysargs* arg) {
     
     int pid = getpid();
     semaphoresList[id]--;
-    //if (semaphoresList[id] > 0) {
-    //    semaphoresList[id]--;
-    //}
     if (semaphoresList[id] < 0) {
         PCB* procList = semaphoreBlockedProc[id];
         if (procList == NULL) {
             semaphoreBlockedProc[id] = &processTable3[pid % MAXPROC];
         }
         else {
-            //processTable3[pid % MAXPROC].nextBlockedProc = procList;
-            //semaphoreBlockedProc[id] = &processTable3[pid % MAXPROC];
-            
             while (procList->nextBlockedProc != NULL) { //adds to tail of list
                 procList = procList->nextBlockedProc;
             }
