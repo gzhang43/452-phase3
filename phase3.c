@@ -223,8 +223,10 @@ void kernTerminate(USLOSS_Sysargs *arg) {
 * Parameters:
 *   arg: a pointer to a USLOSS_Sysargs struct where the syscall out
 *        agruments will be read and stored.
-*        arg1: stores the initial value of the semaphote, then the id of the semaphore created
-*        arg4: stores 0 if a semaphore was successfully created, -1 otherwise
+*   arg->arg1: the initial value of the semaphore
+* Returns:
+*        arg->arg1: the id of the semaphore created
+*        arg->arg4: stores 0 if a semaphore was successfully created, -1 otherwise
 */
 void kernSemCreate(USLOSS_Sysargs* arg) {
     acquireLock();
@@ -252,6 +254,9 @@ void kernSemCreate(USLOSS_Sysargs* arg) {
 * Parameters:
 *   arg: a pointer to a USLOSS_Sysargs struct where the syscall out
 *        agruments will be read and stored.
+*   arg->arg1: id of the semaphore to decrement
+* Returns:
+*   arg->arg4: 0 if a valid semaphore id was given, -1 otherwise
 */
 void kernSemP(USLOSS_Sysargs* arg) {
     acquireLock();
@@ -291,6 +296,9 @@ void kernSemP(USLOSS_Sysargs* arg) {
 * Parameters:
 *   arg: a pointer to a USLOSS_Sysargs struct where the syscall out
 *        agruments will be read and stored.
+*   arg->arg1: id of the semaphore to decrement
+* Returns:
+*   arg->arg4: 0 if a valid semaphore id was given, -1 otherwise
 */
 void kernSemV(USLOSS_Sysargs* arg) {
     acquireLock();
@@ -320,7 +328,8 @@ void kernSemV(USLOSS_Sysargs* arg) {
 * Parameters:
 *   arg: a pointer to a USLOSS_Sysargs struct where the syscall out
 *        agruments will be read and stored.
-*        arg1: stores the current clock time
+* Returns:
+*   arg->arg1: stores the current clock time
 */
 void kernGetTimeOfDay(USLOSS_Sysargs* arg) {
     arg->arg1 = (void*)(long)currentTime();
@@ -333,7 +342,8 @@ void kernGetTimeOfDay(USLOSS_Sysargs* arg) {
 * Parameters:
 *   arg: a pointer to a USLOSS_Sysargs struct where the syscall out
 *        agruments will be read and stored.
-*        arg1: stores the readtime of the cpu
+* Returns:
+*   arg->arg1: stores the readtime of the cpu
 */
 void kernCPUTime(USLOSS_Sysargs* arg) {
     arg->arg1 = (void*)(long)readtime();
@@ -346,7 +356,8 @@ void kernCPUTime(USLOSS_Sysargs* arg) {
 * Parameters:
 *   arg: a pointer to a USLOSS_Sysargs struct where the syscall out
 *        agruments will be read and stored.
-*        arg1: stores the pid of the current process
+* Returns:
+*   arg->arg1: stores the pid of the current process
 */
 void kernGetPID(USLOSS_Sysargs* arg) {
     arg->arg1 = (void*)(long)getpid();
