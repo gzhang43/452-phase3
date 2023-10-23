@@ -218,11 +218,11 @@ void kernTerminate(USLOSS_Sysargs *arg) {
 }
 
 /*
-* Creates a semaphore with an intial value read from arg->arg1
+* Creates a semaphore with an intial value read from arg->arg1.
 * 
 * Parameters:
 *   arg: a pointer to a USLOSS_Sysargs struct where the syscall out
-*        agruments will be read and stored.
+*        arguments will be read and stored.
 *   arg->arg1: the initial value of the semaphore
 * Returns:
 *        arg->arg1: the id of the semaphore created
@@ -252,11 +252,11 @@ void kernSemCreate(USLOSS_Sysargs* arg) {
 * later.
 * 
 * Parameters:
-*   arg: a pointer to a USLOSS_Sysargs struct where the syscall out
-*        agruments will be read and stored.
-*   arg->arg1: id of the semaphore to decrement
+*     arg: a pointer to a USLOSS_Sysargs struct where the syscall out
+*          arguments will be read and stored.
+*     arg->arg1: id of the semaphore to decrement
 * Returns:
-*   arg->arg4: 0 if a valid semaphore id was given, -1 otherwise
+*     arg->arg4: 0 if a valid semaphore id was given, -1 otherwise
 */
 void kernSemP(USLOSS_Sysargs* arg) {
     acquireLock();
@@ -294,11 +294,11 @@ void kernSemP(USLOSS_Sysargs* arg) {
 * then remove it from the list.
 * 
 * Parameters:
-*   arg: a pointer to a USLOSS_Sysargs struct where the syscall out
-*        agruments will be read and stored.
-*   arg->arg1: id of the semaphore to decrement
+*     arg: a pointer to a USLOSS_Sysargs struct where the syscall out
+*          arguments will be read and stored.
+*     arg->arg1: id of the semaphore to decrement
 * Returns:
-*   arg->arg4: 0 if a valid semaphore id was given, -1 otherwise
+*     arg->arg4: 0 if a valid semaphore id was given, -1 otherwise
 */
 void kernSemV(USLOSS_Sysargs* arg) {
     acquireLock();
@@ -323,13 +323,13 @@ void kernSemV(USLOSS_Sysargs* arg) {
 
 /*
 * Calls the kernel mode function currentTime and stores the result in arg1
-* of the USLOSS_Sysargs struct
+* of the USLOSS_Sysargs struct.
 * 
 * Parameters:
-*   arg: a pointer to a USLOSS_Sysargs struct where the syscall out
-*        agruments will be read and stored.
+*     arg: a pointer to a USLOSS_Sysargs struct where the syscall out
+*          arguments will be read and stored.
 * Returns:
-*   arg->arg1: stores the current clock time
+*     arg->arg1: stores the current clock time
 */
 void kernGetTimeOfDay(USLOSS_Sysargs* arg) {
     arg->arg1 = (void*)(long)currentTime();
@@ -337,13 +337,13 @@ void kernGetTimeOfDay(USLOSS_Sysargs* arg) {
 
 /*
 * Calls the kernel mode function readtime and stores the result in arg1
-* of the USLOSS_Sysargs struct
+* of the USLOSS_Sysargs struct.
 *
 * Parameters:
-*   arg: a pointer to a USLOSS_Sysargs struct where the syscall out
-*        agruments will be read and stored.
+*     arg: a pointer to a USLOSS_Sysargs struct where the syscall out
+*          arguments will be read and stored.
 * Returns:
-*   arg->arg1: stores the readtime of the cpu
+*     arg->arg1: stores the readtime of the cpu
 */
 void kernCPUTime(USLOSS_Sysargs* arg) {
     arg->arg1 = (void*)(long)readtime();
@@ -351,13 +351,13 @@ void kernCPUTime(USLOSS_Sysargs* arg) {
 
 /*
 * Calls the kernel mode function getpid and stores the result in arg1
-* of the USLOSS_Sysargs struct
+* of the USLOSS_Sysargs struct.
 *
 * Parameters:
-*   arg: a pointer to a USLOSS_Sysargs struct where the syscall out
-*        agruments will be read and stored.
+*     arg: a pointer to a USLOSS_Sysargs struct where the syscall out
+*          arguments will be read and stored.
 * Returns:
-*   arg->arg1: stores the pid of the current process
+*     arg->arg1: stores the pid of the current process
 */
 void kernGetPID(USLOSS_Sysargs* arg) {
     arg->arg1 = (void*)(long)getpid();
