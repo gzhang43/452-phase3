@@ -1,3 +1,19 @@
+/*
+Assignment: Phase 3
+Group: Grace Zhang and Ellie Martin
+Course: CSC 452 (Operating Systems)
+Instructors: Russell Lewis and Ben Dicken
+Due Date: 10/25/23
+
+Description: Code for Phase 3 of our operating systems kernel that implements
+the syscalls for Spawn, Wait, Terminate, SemCreate, SemP, SemV, GetTimeOfDay,
+CPUTime, and GetPid. Phase 3 initializes the syscall vector with function pointers
+to our implementations and uses mailboxes to block and unblock processes and 
+acquire mutexes.  
+
+To compile with testcases, run the Makefile. 
+*/
+
 #include <stdio.h>
 #include <usloss.h>
 #include "phase1.h"
@@ -6,12 +22,9 @@
 #include "phase3_usermode.h"
 
 typedef struct PCB {
-    char* name;
     int (*startFunc)(char*);
     char* arg;
     int pid;
-    int priority;
-    int status;
     int mboxNum;
     int filled;
     struct PCB* nextBlockedProc;
@@ -28,11 +41,17 @@ void kernSemP(USLOSS_Sysargs* arg);
 void kernSemV(USLOSS_Sysargs* arg);
 
 struct PCB processTable3[MAXPROC+1];
-int semaphoresList[MAXSEMS];
-struct PCB* semaphoreBlockedProc[MAXSEMS];
+int semaphoresList[MAXSEMS]; // array containing semaphores
+struct PCB* semaphoreBlockedProc[MAXSEMS]; // array of lists of processes blocked 
+                                           // on each semaphore
 int numberOfSems;
 int mboxIdInts; // id of mailbox for enabling/disabling interrupts
 
+/*
+Function to initialize data structures required in Phase 3. Initializes the 
+system call vector with the system calls implemented in this file, in addition to
+the mailbox used to implement mutexes for functions.
+*/
 void phase3_init(void) {
     systemCallVec[3] = kernSpawn;
     systemCallVec[4] = kernWait;
@@ -52,18 +71,38 @@ void phase3_init(void) {
     }
 }
 
+/*
+Function to run service processes for Phase 3.
+*/
 void phase3_start_service_processes(void) {
 
 }
 
+/*
+Has process acquire a lock by sending a message to the global one-slot mailbox.
+*/
 void acquireLock() {
     MboxSend(mboxIdInts, NULL, 0);
 }
 
+/*
+Has process release its lock by receiving a message from the global one-slot 
+mailbox.
+*/
 void releaseLock() {
-    MboxCondRecv(mboxIdInts, NULL, 0);
+    MboxCondRecv(mboxIdInts, NULL, 0); // Cond so it does not block if no lock
 }
 
+/*
+Trampoline function to run the user function specified by Spawn. It stores the info
+of the child process in this phase's shadow process table if this hasn't been done
+by kernSpawn, and then runs the function in user mode.
+
+Parameters:
+    arg - the argument to be supplied to the function to run
+
+Returns: None 
+*/
 int trampolineFunc(char *arg) {
     int pid = getpid();
     struct PCB* child = &processTable3[pid % MAXPROC];
@@ -84,6 +123,22 @@ int trampolineFunc(char *arg) {
     Terminate(status);
 }
 
+/*
+Implementation of the syscall for Spawn that creates a new process and runs it in
+user mode. 
+
+Parameters:
+    arg.arg1 - address of the user-main function func
+    arg.arg2 - parameter arg to pass to the user-main function
+    arg.arg3 - the stack size for the process
+    arg.arg4 - the priority of the process
+    arg.arg5 - a pointer to the character string with the new process's name
+
+Returns:
+    arg.arg1 - the PID of the newly created process, or -1 if it could not be
+               created
+    arg.arg4 - 01 if illegal values were given as input; 0 otherwise
+*/
 void kernSpawn(USLOSS_Sysargs *arg) {
     acquireLock(); // disable interrupts
     int (*func)(char*) = (int(*)(char*))arg->arg1;
@@ -105,6 +160,7 @@ void kernSpawn(USLOSS_Sysargs *arg) {
         child->startFunc = func;
         releaseLock();
         MboxSend(child->mboxNum, NULL, 0);
+        acquireLock();
     }
 
     arg->arg1 = (void*)(long)ret;
@@ -112,6 +168,16 @@ void kernSpawn(USLOSS_Sysargs *arg) {
     releaseLock();
 }
 
+/*
+System call that calls join() and returns the PID and status that join() provides.
+
+Parameters: USLOSS_Sysargs* arg is provided to store return values
+
+Returns:
+    arg.arg1 - the PID of the cleaned up process
+    arg.arg2 - the status of the cleaned up process
+    arg.arg4 - -2 if no children; 0 otherwise
+*/
 void kernWait(USLOSS_Sysargs *arg) {
     int status;
     int ret = join(&status);
@@ -128,6 +194,16 @@ void kernWait(USLOSS_Sysargs *arg) {
     releaseLock();
 }
 
+/*
+Terminates the current process with the status specified. If the process still has
+children, will call join() until it returns -2 (no children remaining) before 
+calling quit().
+
+Parameters:
+    arg.arg1 - the status to terminate the process with
+
+Returns: N/A (function never returns)
+*/
 void kernTerminate(USLOSS_Sysargs *arg) {
     acquireLock();
     int status = (int)(long)arg->arg1;
