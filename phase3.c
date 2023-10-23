@@ -160,7 +160,6 @@ void kernSpawn(USLOSS_Sysargs *arg) {
         child->startFunc = func;
         releaseLock();
         MboxSend(child->mboxNum, NULL, 0);
-        acquireLock();
     }
 
     arg->arg1 = (void*)(long)ret;
