@@ -56,6 +56,14 @@ void phase3_start_service_processes(void) {
 
 }
 
+void acquireLock() {
+    MboxSend(mboxIdInts, NULL, 0);
+}
+
+void releaseLock() {
+    MboxCondRecv(mboxIdInts, NULL, 0);
+}
+
 int trampolineFunc(char *arg) {
     int pid = getpid();
     struct PCB* child = &processTable3[pid % MAXPROC];
@@ -77,12 +85,15 @@ int trampolineFunc(char *arg) {
 }
 
 void kernSpawn(USLOSS_Sysargs *arg) {
+    acquireLock(); // disable interrupts
     int (*func)(char*) = (int(*)(char*))arg->arg1;
     int stackSize = (int)(long)arg->arg3;
     int priority = (int)(long)arg->arg4;
 
+    releaseLock();
     int ret = fork1(arg->arg5, trampolineFunc, arg->arg2, stackSize, priority);
-    
+    acquireLock();
+
     struct PCB* child = &processTable3[ret % MAXPROC];
     if (child->filled == 0) {
         child->pid = ret;
@@ -92,16 +103,19 @@ void kernSpawn(USLOSS_Sysargs *arg) {
     }
     else {
         child->startFunc = func;
+        releaseLock();
         MboxSend(child->mboxNum, NULL, 0);
     }
 
     arg->arg1 = (void*)(long)ret;
     arg->arg4 = (void*)(long)0;
+    releaseLock();
 }
 
 void kernWait(USLOSS_Sysargs *arg) {
     int status;
     int ret = join(&status);
+    acquireLock();
     
     if (ret == -2) {
         arg->arg4 = (void*)(long)-2;
@@ -111,20 +125,24 @@ void kernWait(USLOSS_Sysargs *arg) {
         arg->arg1 = (void*)(long)ret;
         arg->arg2 = (void*)(long)status;
     }
+    releaseLock();
 }
 
 void kernTerminate(USLOSS_Sysargs *arg) {
+    acquireLock();
     int status = (int)(long)arg->arg1;
     int joinStatus;
-    
+
     int ret = join(&joinStatus);
     while (ret != -2) {
         ret = join(&joinStatus);
     }
+    releaseLock();
     quit(status);
 }
 
 void kernSemCreate(USLOSS_Sysargs* arg) {
+    acquireLock();
     if (numberOfSems >= MAXSEMS) {
         arg->arg4 = (void*)(long)-1;
     }
@@ -135,16 +153,18 @@ void kernSemCreate(USLOSS_Sysargs* arg) {
         arg->arg4 = (void*)(long)0;
         numberOfSems++;
     }
+    releaseLock();
 }
 
 void kernSemP(USLOSS_Sysargs* arg) {
+    acquireLock();
     int id = (int)(long)arg->arg1;
     if (id < 0 || id >= MAXSEMS) {
         arg->arg4 = (void*)(long)-1;
+        releaseLock();
         return;
     }
     arg->arg4 = (void*)(long)0;
-    // TODO: block if decreases below 0
     
     int pid = getpid();
     semaphoresList[id]--;
@@ -154,31 +174,36 @@ void kernSemP(USLOSS_Sysargs* arg) {
             semaphoreBlockedProc[id] = &processTable3[pid % MAXPROC];
         }
         else {
-            while (procList->nextBlockedProc != NULL) { //adds to tail of list
+            while (procList->nextBlockedProc != NULL) { // adds to tail of list
                 procList = procList->nextBlockedProc;
             }
-            procList->nextBlockedProc = &processTable3[pid % MAXPROC];
-            
+            procList->nextBlockedProc = &processTable3[pid % MAXPROC];         
         }
+        releaseLock();
         MboxRecv(processTable3[pid % MAXPROC].mboxNum, NULL, 0);
     }
+    releaseLock();
 }
 
 void kernSemV(USLOSS_Sysargs* arg) {
+    acquireLock();
     int id = (int)(long)arg->arg1;
     if (id < 0 || id >= MAXSEMS) {
         arg->arg4 = (void*)(long)-1;
+        releaseLock();
         return;
     }
     arg->arg4 = (void*)(long)0;
     semaphoresList[id]++;
-    // TODO: unblock processes blocked on this semaphore
+    
     if (semaphoreBlockedProc[id] != NULL) {
         PCB* process = semaphoreBlockedProc[id];
         semaphoreBlockedProc[id] = semaphoreBlockedProc[id]->nextBlockedProc;
         process->nextBlockedProc = NULL;
+        releaseLock();
         MboxSend(process->mboxNum, NULL, 0);
     }
+    releaseLock();
 }
 
 void kernGetTimeOfDay(USLOSS_Sysargs* arg) {
