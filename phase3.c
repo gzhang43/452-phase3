@@ -221,12 +221,12 @@ void kernTerminate(USLOSS_Sysargs *arg) {
 * Creates a semaphore with an intial value read from arg->arg1.
 * 
 * Parameters:
-*   arg: a pointer to a USLOSS_Sysargs struct where the syscall out
-*        arguments will be read and stored.
-*   arg->arg1: the initial value of the semaphore
+*     arg: a pointer to a USLOSS_Sysargs struct where the syscall out
+*          arguments will be read and stored.
+*     arg->arg1: the initial value of the semaphore
 * Returns:
-*        arg->arg1: the id of the semaphore created
-*        arg->arg4: stores 0 if a semaphore was successfully created, -1 otherwise
+*     arg->arg1: the id of the semaphore created
+*     arg->arg4: stores 0 if a semaphore was successfully created, -1 otherwise
 */
 void kernSemCreate(USLOSS_Sysargs* arg) {
     acquireLock();
